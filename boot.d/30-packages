@@ -1,0 +1,5 @@
+#!/bin/sh
+
+apk add -X http://dl-cdn.alpinelinux.org/alpine/edge/community nomad
+
+apk add ca-certificates,ca-certificates-cacert

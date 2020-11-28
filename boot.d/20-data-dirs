@@ -1,0 +1,23 @@
+#!/bin/sh
+
+for dir in /data /data/dist /data/ssl /data/ssl/certs; do
+    mkdir -p $dir
+    chown root:root $dir
+    chmod 755 $dir
+done
+
+for dir in /data/consul /data/consul/conf /data/consul/db /data/consul/policies; do
+    mkdir -p $dir
+    chown consul:consul $dir
+    chmod 700 $dir
+done
+
+for user in consul vault; do
+    mkdir -p /data/ssl/$user
+    chown $user:$user /data/ssl/$user
+    chmod 750 /data/ssl/$user
+done
+
+mkdir -p /data/ssl/nomad
+chown root:root /data/ssl/nomad
+chmod 750 /data/ssl/nomad

@@ -1,0 +1,37 @@
+#!/usr/bin/python3
+
+import os, json
+
+# map of {filename : list of tags to try in order to get the contents of the file}
+files = {
+    '/etc/hostname' : ['hostname', 'Name'],
+    '{etcdir}/datacenter' : ['consul-dc'],
+    '{etcdir}/nomad-region' : ['nomad-region', 'consul-dc'],
+    '{etcdir}/nomad-datacenter' : ['nomad-dc']
+}
+
+vardir = os.environ.get('NOMADIC_VAR', '/var/nomadic')
+etcdir = os.environ.get('NOMADIC_DIR', '/etc/nomadic')
+
+dirs = {
+    'vardir' : vardir,
+    'etcdir' : etcdir
+}
+
+with open(os.path.join(vardir, 'node.json')) as f:
+    data = json.load(f)
+
+tags = data.get('tags', {})
+
+for filename, taglist in files.items():
+    filename = filename.format(**dirs)
+    value = None
+    for tag in taglist:
+        value = tags.get(tag)
+        if value is not None:
+            break
+
+    if value is not None:
+        print("    %s: %s" % (filename, value))
+        with open(filename, "w") as f:
+            f.write(value + "\n")

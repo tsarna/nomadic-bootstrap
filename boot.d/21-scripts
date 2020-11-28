@@ -1,0 +1,40 @@
+#!/usr/bin/python3
+
+import os
+
+bindir = os.environ.get('NOMADIC_BIN', '/usr/local/bin')
+
+multi_service="""
+#!/bin/sh
+
+action=$1; shift
+
+for service in $*; do
+    rc-service $service $action
+done
+""".lstrip()
+
+new_key="""
+#!/bin/sh
+
+keyfile=$1
+ownership=$2
+action=$3
+
+shift 3
+
+chown $ownership $keyfile
+
+for service in $*; do
+    rc-service $service $action
+done
+""".lstrip()
+
+def write_script(fn, contents):
+    fn = os.path.join(bindir, fn)
+    with open(fn, "w") as f:
+        f.write(contents)
+    os.chmod(fn, 0o744)
+
+write_script("multi-service", multi_service)
+write_script("new-key", new_key)

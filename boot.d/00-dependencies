@@ -1,0 +1,5 @@
+#!/bin/sh
+
+apk --no-progress upgrade
+
+apk add python3

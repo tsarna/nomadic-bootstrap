@@ -1,0 +1,40 @@
+#!/bin/sh
+
+apk add shadow
+
+# Pre-create certain groups and users for predictable IDs
+
+groupadd -f -g 1001 consul
+id consul >/dev/null 2>&1 || useradd -u 1001 -g consul -d /var/consul consul
+
+groupadd -f -g 1002 vault
+id vault >/dev/null 2>&1 || useradd -u 1002 -g vault -d /data/vault vault
+
+groupadd -f -g 1003 unbound
+id unbound >/dev/null 2>&1 || useradd -u 1003 -g unbound -d /etc/unbound unbound
+
+groupadd -f -g 1004 docker
+
+groupadd -f -g 1005 coredns
+id coredns >/dev/null 2>&1 || useradd -u 1005 -g coredns -d /etc/coredns coredns
+
+groupadd -f -g 1006 dhcp
+id dhcp >/dev/null 2>&1 || useradd -u 1006 -g dhcp -d /var/lib/dhcp dhcp
+
+# 1007 reserved
+
+groupadd -f -g 1008 sudo
+cat >/etc/sudoers.d/wheel <<__EOF__
+## Allow sudo without password for group wheel
+%wheel ALL=(ALL) NOPASSWD: ALL
+__EOF__
+cat >/etc/sudoers.d/sudo <<__EOF__
+## Allow sudo with password for group sudo
+%sudo        ALL=(ALL) ALL
+__EOF__
+
+groupadd -f -g 389 ldap
+id ldap >/dev/null 2>&1 || useradd -u 389 -g ldap -d /usr/lib/openldap ldap
+
+groupadd -f -g 1883 mosquitto
+id mosquitto >/dev/null 2>&1 || useradd -u 1883 -g mosquitto -d /var/mosquitto mosquitto

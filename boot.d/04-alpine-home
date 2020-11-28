@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Move alpine homedir to /local in case /home will be a network mount
+
+apk add shadow
+
+mkdir -p /local
+chmod 755 /local
+
+if [ ~alpine != /local/alpine ]; then
+    echo "moving alpine user home directory to /local/alpine"
+    usermod -m -d /local/alpine alpine
+    exit $?
+fi

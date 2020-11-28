@@ -1,0 +1,76 @@
+#!/usr/bin/python3 -i
+
+import sys, os, json, subprocess, boto3
+
+vardir = os.environ.get('NOMADIC_VAR', '/var/nomadic')
+etcdir = os.environ.get('NOMADIC_DIR', '/etc/nomadic')
+
+with open('/etc/hostname') as f:
+    hostname = f.read().strip()
+
+with open(os.path.join(vardir, 'node.json')) as f:
+    data = json.load(f)
+
+if data.get('cloud') != 'AWS':
+    print("Not running on AWS, skipping")
+    sys.exit(0)
+
+os.system("apk add lsblk")
+
+ec2 = boto3.resource('ec2', data['region'])
+instance = ec2.Instance(data['instance_id'])
+
+volume_tags = {}
+for volume in instance.volumes.all():
+    tags = {}
+    for tag in volume.tags:
+        tags[tag['Key']] = tag['Value']
+
+    volume_tags[volume.id] = tags
+
+lsblk = json.loads(subprocess.check_output(['lsblk', '-J', '-O']))
+
+def process_root(path, blk, vol_name, vol_tags):
+    if 'children' in blk:
+        for part in blk['children']:
+            if part['mountpoint'] == '/':
+                path = part['path']
+                print("        / on %s (%s):" % (path, part.get('fstype', '?')))
+                label = part['partlabel']
+                if label != vol_name:
+                    e2label(part['path'], vol_name)
+                    print("            Updated partition label from '%s' to '%s'\n" % (label, vol_name))
+                else:
+                    print("            OK")
+    else:
+        label = blk['label']
+        fstype = blk.get('fstype')
+                        
+
+def e2label(path, label):
+    pass
+                
+
+for blk in lsblk['blockdevices']:
+    path = blk['path']
+    serial = blk['serial']
+    label = blk.get('label')
+
+    volid = serial
+    if volid.startswith("vol") and not volid.startswith("vol-"):
+        volid = "vol-" + volid[3:]
+
+    vol_tags = volume_tags.get(volid, '')
+    vol_name = vol_tags.get("Name", "")
+
+    if vol_name is not None:
+        print("    %s on %s: \"%s\"" % (volid, path, vol_name))
+
+        if vol_name == hostname + "-root":
+            process_root(path, blk, vol_name, vol_tags)
+        elif vol_name == hostname + "-data":
+            print("        Data\n")
+            #process_data(path, blk, vol_name, vol_tags)
+        else:
+            print("        Skipped\n")
+
